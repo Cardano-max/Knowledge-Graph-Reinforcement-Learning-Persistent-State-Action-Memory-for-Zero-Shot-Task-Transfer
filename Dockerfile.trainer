@@ -37,23 +37,25 @@ RUN pip install --no-cache-dir \
     pynput \
     psutil
 
-# Install networking library
+# Install networking
 RUN pip install --no-cache-dir tlspyo>=0.2.5
 
 # Install TMRL
 RUN pip install --no-cache-dir --no-deps tmrl==0.7.1
 
-# Create TMRL directories
+# Create directories
 RUN mkdir -p /root/TmrlData/config \
              /root/TmrlData/weights \
              /root/TmrlData/checkpoints \
-             /root/TmrlData/logs
+             /root/TmrlData/logs \
+             /shared-data
 
-# Copy configuration
-COPY config.json /root/TmrlData/config/config.json
+# Copy trainer config
+COPY trainer_config.json /root/TmrlData/config/config.json
 
-# Expose port
-EXPOSE 6666
+# Copy custom training script
+COPY train_with_logging.py /app/train_with_logging.py
 
-# Run trainer
-CMD ["python", "-u", "-m", "tmrl", "--trainer"]
+EXPOSE 6668
+
+CMD ["python", "-u", "/app/train_with_logging.py"]

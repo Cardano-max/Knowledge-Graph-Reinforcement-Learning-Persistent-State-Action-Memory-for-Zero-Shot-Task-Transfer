@@ -1,0 +1,26 @@
+FROM alpine:latest
+
+WORKDIR /shared-data
+
+# Install basic tools
+RUN apk add --no-cache \
+    bash \
+    coreutils
+
+# Create data directory structure
+RUN mkdir -p /shared-data/episodes \
+             /shared-data/states \
+             /shared-data/actions \
+             /shared-data/metrics
+
+# Create health check script
+RUN echo '#!/bin/bash' > /health-check.sh && \
+    echo 'echo "Database container healthy"' >> /health-check.sh && \
+    echo 'echo "Storage directories:"' >> /health-check.sh && \
+    echo 'ls -lh /shared-data' >> /health-check.sh && \
+    chmod +x /health-check.sh
+
+VOLUME ["/shared-data"]
+
+# Keep container running
+CMD ["tail", "-f", "/dev/null"]

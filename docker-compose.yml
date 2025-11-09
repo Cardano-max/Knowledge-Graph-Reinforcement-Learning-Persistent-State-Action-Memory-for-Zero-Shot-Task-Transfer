@@ -1,25 +1,63 @@
 version: '3.8'
 
 services:
-  tmrl-trainer:
-    build: .
-    container_name: tmrl_trainer
-    hostname: tmrl-trainer
-    
+  # Container 1: Server
+  tmrl-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: tmrl_server
+    hostname: tmrl-server
+    networks:
+      - tmrl-network
+    ports:
+      - "6666:6666"
+      - "6667:6667"
     environment:
       - PYTHONUNBUFFERED=1
-    
+    restart: unless-stopped
+
+  # Container 2: Trainer
+  tmrl-trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.trainer
+    container_name: tmrl_trainer
+    hostname: tmrl-trainer
+    depends_on:
+      - tmrl-server
+      - tmrl-database
+    networks:
+      - tmrl-network
+    ports:
+      - "6668:6668"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/shared-data
     volumes:
       - ./weights:/root/TmrlData/weights
       - ./checkpoints:/root/TmrlData/checkpoints
       - ./logs:/root/TmrlData/logs
-      - ./dataset:/root/TmrlData/dataset
-    
-    ports:
-      - "6666:6666"
-      - "6668:6668"
-    
+      - training-data:/shared-data
     restart: unless-stopped
-    
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+
+  # Container 3: Database (File Storage)
+  tmrl-database:
+    build:
+      context: .
+      dockerfile: Dockerfile.database
+    container_name: tmrl_database
+    hostname: tmrl-database
+    networks:
+      - tmrl-network
+    volumes:
+      - training-data:/shared-data
+    restart: unless-stopped
+
+networks:
+  tmrl-network:
+    driver: bridge
+
+volumes:
+  training-data:
+    driver: local

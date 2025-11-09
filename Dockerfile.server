@@ -1,0 +1,69 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies INCLUDING kernel headers for evdev
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    netcat-openbsd \
+    iputils-ping \
+    linux-headers-generic \
+    && rm -rf /var/lib/apt/lists/* || \
+    apt-get update && apt-get install -y \
+    git \
+    wget \
+    netcat-openbsd \
+    iputils-ping \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch CPU
+RUN pip install --no-cache-dir \
+    torch==2.0.1 \
+    torchvision==0.15.2 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install TMRL dependencies (all needed due to TMRL imports)
+RUN pip install --no-cache-dir \
+    "numpy<2.0" \
+    pandas \
+    pyyaml \
+    packaging \
+    requests \
+    gymnasium \
+    opencv-python-headless \
+    Pillow \
+    matplotlib \
+    rtgym \
+    mss \
+    psutil
+
+# Install pyautogui and pynput WITHOUT evdev
+RUN pip install --no-cache-dir \
+    pytweening \
+    pyscreeze \
+    pygetwindow \
+    pymsgbox \
+    mouseinfo \
+    python-xlib \
+    pyperclip && \
+    pip install --no-cache-dir --no-deps pyautogui pynput
+
+# Install networking
+RUN pip install --no-cache-dir tlspyo>=0.2.5
+
+# Install TMRL
+RUN pip install --no-cache-dir --no-deps tmrl==0.7.1
+
+# Create directories
+RUN mkdir -p /root/TmrlData/config
+
+# Copy server config
+COPY server_config.json /root/TmrlData/config/config.json
+
+# Expose ports
+EXPOSE 6666 6667
+
+CMD ["python", "-u", "-m", "tmrl", "--server"]
